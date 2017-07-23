@@ -15,6 +15,6 @@ A D3Js based bubble graph that shows major data breaches throughout the world ov
 
 Clone the project in any local directory
 
-Run commands ```npm install``` followed by ```http-server``` from the terminal in project directory.
+Run commands ```npm install``` followed by ```node index.js``` from the terminal in project directory.
 
-App runs on localhost port 8080.
+App runs on localhost port 3000.
