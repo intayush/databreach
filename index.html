@@ -1,0 +1,320 @@
+<!-- Run server by executing http-server from terminal in project folder-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Bubble Chart D3</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.11.0/jquery-ui.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.98.2/css/materialize.min.css">
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.98.2/js/materialize.min.js"></script>
+
+  </head>
+  <body>
+    <form action="#">
+    <div class="container">
+    <div class="row">
+      <div class="col s12 m12"><br><br></div>
+      <div class="col s12 m12">
+        <div class="col s2 m2">
+          <input type="checkbox" id="all" class="mdc-switch__native-control" checked disabled="true"/>
+          <label for="all">All</label>
+        </div>
+        <div class="col s2 m2">
+          <input type="checkbox" id="academic" class="mdc-switch__native-control"/>
+          <label for="academic">Academic</label>
+        </div>
+        <div class="col s2 m2">
+          <input type="checkbox" id="media" class="mdc-switch__native-control"/>
+          <label for="media">Media</label>
+        </div>
+        <div class="col s2 m2">
+          <input type="checkbox" id="web" class="mdc-switch__native-control"/>
+          <label for="web">Web</label>
+        </div>
+        <div class="col s2 m2">
+          <input type="checkbox" id="transport" class="mdc-switch__native-control"/>
+          <label for="transport">Transport</label>
+        </div>
+        <div class="col s2 m2">
+          <input type="checkbox" id="retail" class="mdc-switch__native-control"/>
+          <label for="retail">Retail</label>
+        </div>
+        <div class="col s2 m2">
+          <input type="checkbox" id="banks" class="mdc-switch__native-control"/>
+          <label for="banks">Banks</label>
+        </div>
+        <div class="col s2 m2">
+          <input type="checkbox" id="app" class="mdc-switch__native-control"/>
+          <label for="app">App</label>
+        </div>
+        <div class="col s2 m2">
+          <input type="checkbox" id="npo" class="mdc-switch__native-control"/>
+          <label for="npo">NPO</label>
+        </div>
+      </div>
+    </div>
+    </div>
+  </form>
+    <script type="text/javascript">
+    //Scale Properties
+    var margin = {top: 20, right: 15, bottom: 60, left: 60}
+      , width = screen.width - margin.left - margin.right
+      , height = 1000 - margin.top - margin.bottom;
+    var xaxis = d3.time.scale()       //Call xaxis(Date) to plot a date on graph
+    .domain([new Date(0,0,1), new Date(0,0,2)]) //xaxis domain is of 24 hours
+    .range([0,885]);
+    var yaxis = d3.time.scale()
+                .domain([new Date(2018,0,1),new Date(2014,0,1)])
+                .range ([0,980]);
+    //D3 move objects to front and back functions
+    d3.selection.prototype.moveToFront = function() {
+        return this.each(function(){
+          this.parentNode.appendChild(this);
+        });
+      };
+    d3.selection.prototype.moveToBack = function() {
+        return this.each(function() {
+            var firstChild = this.parentNode.firstChild;
+            if (firstChild) {
+                this.parentNode.insertBefore(this, firstChild);
+            }
+        });
+    };
+    //Organisation object definition
+    function Org(name,category,date,impact){
+      this.name = name,
+      this.category = category,
+      this.date = date,
+      this.impact = (impact<200) ? 200 : impact;
+      this.startX = Math.random() * width;
+      this.startY = Math.random() * (yaxis(new Date(this.date.getFullYear()+1,0,1))-yaxis(new Date(this.date.getFullYear(),0,1))) + yaxis(new Date(this.date.getFullYear(),0,1));
+      this.x = xaxis(this.getx());
+      this.y = yaxis(this.gety());
+      this.fixed = false;
+      this.textClass = String(this.name).toLowerCase().split(' ').join('-').split('.').join('-');
+    }
+    Org.prototype.getx = function () {
+      return new Date(0,0,1,this.date.getHours());
+    };
+    Org.prototype.gety = function() {
+      return this.date;
+    }
+    Org.prototype.radius = function() {
+      return this.impact/5;
+    }
+    //Array of Org objects to plot
+    var breaches = [
+      new Org('Lynda.com','academic',new Date(2016,11,16,12),100),
+      new Org('Dailymotion.com','media',new Date(2016,11,5,13),150),
+      new Org('Mail.ru','web',new Date(2015,5,20,14),455),
+      new Org('Ebay','retail',new Date(2017,1,23,15),300),
+      new Org('Yahoo','web',new Date(2014,8,10,16),600),
+      new Org('Evernote','app',new Date(2014,5,5,17),90),
+      new Org('Code.org','npo',new Date(2015,3,16,18),240),
+      new Org('Mozilla','web',new Date(2016,11,16,6),100),
+      new Org('European Central Bank','banks',new Date(2017,4,13,7),360),
+      new Org('Uber','transport',new Date(2016,2,30,8),500),
+      new Org('Netflix','media',new Date(2017,1,2,9),320)
+    ];
+    /*Sort the array by impact so that
+    low radius buubles appear above high radius bubbles*/
+      breaches.sort(function(a, b){
+        var keyA = a.impact,
+            keyB = b.impact;
+        if(keyA < keyB) return 1;
+        if(keyA > keyB) return -1;
+        return 0;
+      });
+      //Add svg to body
+      var chart = d3.select("body")
+        .append("svg:svg")
+        .attr("width", width+margin.right+margin.left)
+        .attr("height", width+margin.top+margin.bottom)
+        .attr('class','chart');
+      //Draw the graph axis
+      var main = chart.append('g')
+        .attr("transform", "translate("+margin.left+","+margin.right+")")
+        .attr("width",width)
+        .attr("height",height)
+        .attr("class","main");
+      var xAxis = d3.svg.axis().orient("bottom")
+        .scale(xaxis).ticks(d3.time.hours,1);
+      var yAxis = d3.svg.axis().orient("left")
+        .scale(yaxis).ticks(d3.time.month,12);
+        main.append('g')
+        .attr('transform', 'translate(0,0)')
+        .attr('class', 'main axis date')
+        .call(yAxis);
+      var g = main.append('svg:g');
+      //Plot the circles
+      var color = d3.scale.category20();
+      var circles = g.selectAll('scatter-dots')
+        .data(breaches)
+        .enter()
+        .append('circle')
+        .attr("stroke","black")
+        .attr("fill", function(d,i){ return color(i); })
+        .attr("opacity",1)
+        .attr('id',function(d){ return 'circle-name-'+d.name; })
+        .attr("class",function(d){ return 'category-'+d.category+' node-'+d.textClass; })
+        .attr('cy', function(d){ return d.startY; })
+        .attr('cx', function(d){ return d.startX; })
+        .attr('r', function(d){ return d.radius(); })
+        .on('mouseover', function(d){
+        var elementCircle = d3.select(this);
+        elementCircle.transition().duration(500)
+        .attr("r", d.radius() * 3)
+        .attr("fill", "white");
+        //d3.select(this).moveToFront();
+        //d3.select('#'+d.textClass).moveToFront();
+        var elementText = d3.select('#'+d.textClass);
+        elementText.transition().duration(500).style('font-size','20px').text(d.name);
+        //elementText.on('mouseover',function(d){});
+        })
+        .on('mouseout', function(d){
+        var elementCircle = d3.select(this);
+        var elementText  = d3.select('#'+d.textClass);
+        elementCircle.transition()
+        .duration(500)
+        .attr("r", d.radius())
+        .attr("fill",function(d,i){ return color(i); })
+        .each("end",function(){ elementCircle.transition()
+            .duration(30000)
+            .ease("linear")
+            .attr('cx',function(d){ return d.x; })
+            .attr('cy',function(d){ return d.y; });
+        elementText.transition()
+          .duration(30000)
+          .ease("linear")
+          .attr("x",function(d){ return d.x; })
+          .attr("y",function(d){ return d.y });
+        });
+        //elementText.moveToBack();
+        //elementCircle.moveToBack();
+        elementText.transition().duration(500).style('font-size','15px').text(function(){
+          var w = this.getComputedTextLength();
+          if(w>(2*d.radius())){
+            return d.name.substr(0,8)+'..';
+          }else{
+            return d.name;
+          }
+        }) ;
+
+      });
+      //Plot the text on circles
+      g.selectAll('scatter-dots')
+      .data(breaches)
+      .enter()
+      .append("a")
+      .attr('xlink:href','https://www.google.com')
+      .attr("class", function(d){ return 'text-category-'+d.category+' node-'+d.textClass; })
+      .append('text')
+      .attr("x", function(d){return d.startX; })
+      .attr("y", function(d){return d.startY; })
+      .attr("dy", ".35em")
+      .attr("id", function(d){ return d.textClass; })
+      .attr("opacity","1")
+      .on('mouseover',function(d){
+        var thisCircle = d3.select('#circle-name-'+d.name);
+        thisCircle.transition().duration(500).attr('r',d.radius()*3);
+      })
+      .style("text-anchor","middle")
+      .style("font-size","15px")
+      .text(function(d) { return d.name; })
+      .each(function(d){
+        var w = this.getComputedTextLength();
+        if(w>(2*d.radius())){
+          d3.select(this).text(d.name.substr(0,8)+'..');
+        }
+      });
+
+      //Code for bubble movement
+      function transition() {
+        var xcoor;
+        var ycoor;
+          var nodes = g.selectAll('circle').data(breaches);
+          nodes.transition()
+              .duration(30000)
+              .ease("linear")
+              .attr('cx',function(d){ return d.x; })
+              .attr('cy',function(d){ return d.y; });
+          var nodes = g.selectAll('text').data(breaches);
+          nodes.transition()
+              .duration(30000)
+              .ease("linear")
+              .attr('x',function(d){ return d.x; })
+              .attr('y',function(d){ return d.y; });
+      };
+      transition();
+      function resumeTransition(obj,x,y){
+        obj.transition()
+        .duration(30000)
+        .ease('linear')
+        .attr('cx',x)
+        .attr('cy',y);
+      }
+
+      //Code for filters
+
+      //Callback function for filters
+      var categoryFilter = function() {
+          var attribute = this.checked;
+          var cat = this.id;
+          var uncheckCount = 0;
+          f = document.getElementsByClassName('mdc-switch__native-control');
+          if(cat=='all'){
+            if(attribute){
+              this.disabled="true";
+              for(j=1;j<f.length;j++){
+                  f[j].checked=false;
+              }
+               g.selectAll('circle')
+               .attr('opacity',0.5);
+               g.selectAll('text')
+               .attr('opacity',1);
+            }
+            else{
+               g.selectAll('circle')
+               .attr('opacity',0);
+               g.selectAll('text')
+               .attr('opacity',0);
+            }
+          }
+          else{
+            document.getElementById('all').checked=false;
+            for(j=1;j<f.length;j++){
+                if(f[j].checked){
+                  document.getElementById('all').disabled=false;
+                  g.selectAll('.category-'+f[j].id)
+                  .attr('opacity',function(d){return 0.5;});
+                  g.selectAll('.text-category-'+f[j].id)
+                  .attr('opacity',function(d){return 1;});
+                }else{
+                  uncheckCount++;
+                  g.selectAll('.category-'+f[j].id)
+                  .attr('opacity',function(d){return 0.0;});
+                  g.selectAll('.text-category-'+f[j].id)
+                  .attr('opacity',function(d){return 0.0;});
+              }
+            }
+            if(uncheckCount>=f.length-1){
+              document.getElementById('all').disabled=true;
+              document.getElementById('all').checked=true;
+              g.selectAll('circle')
+              .attr('opacity',0.5);
+              g.selectAll('text')
+              .attr('opacity',1);
+            }
+          }
+        };
+
+      //Add Event Listener to all the filter checkboxes
+      filters = document.getElementsByClassName('mdc-switch__native-control');
+      for(i=0;i<filters.length;i++){
+        filters[i].addEventListener('click',categoryFilter,false);
+      }
+    </script>
+  </body>
+</html>
