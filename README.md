@@ -1,8 +1,8 @@
 # Project Title
 
-###Data Breach Bubble Chart using D3Js
+### Data Breach Bubble Chart using D3Js
 
-##Description
+## Description
 
 A D3Js based bubble graph that shows major data breaches throughout the world over the last 3 years.
  	
@@ -11,7 +11,7 @@ A D3Js based bubble graph that shows major data breaches throughout the world ov
 * Filters are provided based on the category of data breach.
 * Data is obtained from a json and is completely dynamic.
 
-##How to run
+## How to run
 
 Clone the project in any local directory
 
